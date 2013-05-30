@@ -1,0 +1,5 @@
+python-evdev (0.3.3-0ubuntu1) saucy; urgency=low
+
+  * Initial release.
+
+ -- Łukasz 'sil2100' Zemczak <lukasz.zemczak@ubuntu.com>  Thu, 30 May 2013 13:24:50 +0200
