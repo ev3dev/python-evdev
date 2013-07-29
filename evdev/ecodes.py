@@ -5,7 +5,8 @@ This modules exposes most integer constants defined in ``linux/input.h``.
 
 Exposed constants::
 
-    KEY, ABS, REL, SW, MSC, LED, BTN, REP, SND, ID, EV, BUS, SYN
+    KEY, ABS, REL, SW, MSC, LED, BTN, REP, SND, ID, EV, BUS, SYN, FF,
+    FF_STATUS
 
 This module also provides numerous reverse and forward mappings that are best
 illustrated by a few examples::
@@ -27,6 +28,14 @@ illustrated by a few examples::
 
     >>> evdev.ecodes.bytype[EV_REL][0]
     'REL_X'
+
+Values in reverse mappings may point to one or more ecodes. For example::
+
+    >>> evdev.ecodes.FF[80]
+    ['FF_EFFECT_MIN', 'FF_RUMBLE']
+
+    >>> evdev.ecodes.FF[81]
+    'FF_PERIODIC'
 '''
 
 from inspect import getmembers
@@ -36,15 +45,30 @@ from evdev import _ecodes
 #: mapping of names to values
 ecodes = {}
 
-prefixes = 'KEY ABS REL SW MSC LED BTN REP SND ID EV BUS SYN'
+prefixes = 'KEY ABS REL SW MSC LED BTN REP SND ID EV BUS SYN FF_STATUS FF'
+prev_prefix = ''
 g = globals()
 
-for k,v in getmembers(_ecodes):
-    for i in prefixes.split():
-        if k.startswith(i):
-            g.setdefault(i, {})[v] = k
-            ecodes[k] = v
+# eg. code: 'REL_Z', val: 2
+for code, val in getmembers(_ecodes):
+    for prefix in prefixes.split():  # eg. 'REL'
+        if code.startswith(prefix):
+            ecodes[code] = val
+            # FF_STATUS codes should not appear in the FF reverse mapping
+            if not code.startswith(prev_prefix):
+                d = g.setdefault(prefix, {})
+                # codes that share the same value will be added to a list. eg:
+                # >>> ecodes.FF_STATUS
+                # {0: 'FF_STATUS_STOPPED', 1: ['FF_STATUS_MAX', 'FF_STATUS_PLAYING']}
+                if val in d:
+                    if isinstance(d[val], list):
+                        d[val].append(code)
+                    else:
+                        d[val] = [d[val], code]
+                else:
+                    d[val] = code
 
+        prev_prefix = prefix
 
 #: keys are a combination of all BTN and KEY codes
 keys = {}
@@ -66,9 +90,11 @@ bytype = {
     _ecodes.EV_LED: LED,
     _ecodes.EV_REP: REP,
     _ecodes.EV_SND: SND,
-    _ecodes.EV_SYN: SYN, }
+    _ecodes.EV_SYN: SYN,
+    _ecodes.EV_FF:  FF,
+    _ecodes.EV_FF_STATUS: FF_STATUS, }
 
 from evdev._ecodes import *
 
 # cheaper than whitelisting in an __all__
-del k, v, i, getmembers, g, prefixes
+del code, val, prefix, getmembers, g, d, prefixes, prev_prefix

@@ -1,3 +1,15 @@
+python-evdev (0.4.1-0ubuntu1) saucy; urgency=low
+
+  * New upstream version. (LP: #1206139)
+    - Fix segfault in device_read_many()
+    - Fix reference counting in device_read, device_read_many and 
+      ioctl_capabilities
+    - New enhancements
+  * debian/control, debian/copyright:
+    - Modified the short package descriptions, changed homepage and Vcs
+
+ -- Łukasz 'sil2100' Zemczak <lukasz.zemczak@ubuntu.com>  Mon, 29 Jul 2013 13:03:20 +0200
+
 python-evdev (0.3.3-0ubuntu1) saucy; urgency=low
 
   * Initial release.
