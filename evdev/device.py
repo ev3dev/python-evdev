@@ -4,7 +4,7 @@ import os
 from select import select
 from collections import namedtuple
 
-from evdev import _input, ecodes, util
+from evdev import _input, _uinput, ecodes, util
 from evdev.events import InputEvent
 
 
@@ -90,10 +90,10 @@ class InputDevice(object):
         self.fn = dev
 
         #: A non-blocking file descriptor to the device file
-        self.fd = os.open(dev, os.O_RDONLY | os.O_NONBLOCK)
+        self.fd = os.open(dev, os.O_RDWR | os.O_NONBLOCK)
 
         # Returns (bustype, vendor, product, version, name, phys, capabilities)
-        info_res  = _input.ioctl_devinfo(self.fd)
+        info_res = _input.ioctl_devinfo(self.fd)
 
         #: A :class:`DeviceInfo <evdev.device.DeviceInfo>` instance
         self.info = DeviceInfo(*info_res[:4])
@@ -108,7 +108,7 @@ class InputDevice(object):
         self.version = _input.ioctl_EVIOCGVERSION(self.fd)
 
         #: The raw dictionary of device capabilities - see `:func:capabilities()`
-        self._rawcapabilities = info_res[6]
+        self._rawcapabilities = _input.ioctl_capabilities(self.fd)
 
     def _capabilities(self, absinfo=True):
         res = {}
@@ -179,6 +179,14 @@ class InputDevice(object):
             return [(ecodes.LED[l] if l in ecodes.LED else '?', l) for l in leds]
 
         return leds
+
+    def set_led(self, led_num, value):
+        '''
+        Sets the state of the selected LED. Example::
+        
+          device.set_led(ecodes.LED_NUML, 1)
+        '''
+        _uinput.write(self.fd, ecodes.EV_LED, led_num, value)
 
     def __eq__(self, o):
         '''Two devices are considered equal if their :data:`info` attributes are equal.'''

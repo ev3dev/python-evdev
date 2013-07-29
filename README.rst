@@ -4,7 +4,7 @@
 *evdev* provides bindings to the generic input event interface in Linux.
 The *evdev* interface serves the purpose of passing events generated in the
 kernel directly to userspace through character devices that are typically
-located in `/dev/input/`.
+located in ``/dev/input/``.
 
 *evdev* also comes with bindings to *uinput*, the userspace input
 subsystem. *Uinput* allows userspace programs to create and handle
@@ -13,11 +13,7 @@ the input subsystem.
 
 
 Documentation:
-    +---------+-----------------------------------------+
-    | devel   | http://gvalkov.github.com/python-evdev  |
-    +---------+-----------------------------------------+
-    | stable  | http://packages.python.org/evdev        |
-    +---------+-----------------------------------------+
+    http://packages.python.org/evdev
 
 Development:
     https://github.com/gvalkov/python-evdev
@@ -29,15 +25,41 @@ PyPi:
 Changelog
 =========
 
-Development
+0.4.1 (Jul 24, 2013)
 ^^^^^^^^^^^
+
+Fixes:
+    - Fix reference counting in ``device_read``, ``device_read_many``
+      and ``ioctl_capabilities``.
+
+
+0.4.0 (Jul 01, 2013)
+^^^^^^^^^^^^^^^^^^^^
+
+Enhancements:
+    - Add ``FF_*`` and ``FF_STATUS`` codes to ``ecodes`` (thanks @bgilbert).
+
+    - Reverse event code mappings (``ecodes.{KEY,FF,REL,ABS}`` and
+      etc.) will now map to a list of codes, whenever a value
+      corresponds to multiple codes::
+
+        >>> ecodes.KEY[152]
+        ... ['KEY_COFFEE', 'KEY_SCREENLOCK']
+        >>> ecodes.KEY[30]
+        ... 'KEY_A'
+
+    - Set the state of a LED through ``device.set_led()`` (thanks
+      @accek). ``device.fd`` is opened in ``O_RDWR`` mode from now on.
+
+Fixes:
+    - Fix segfault in ``device_read_many()`` (thanks @bgilbert).
 
 0.3.3 (May 29, 2013)
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixes:
-    - Raise `IOError` from `device_read()` and `device_read_many()` when
-      `read()` fails.
+    - Raise ``IOError`` from ``device_read()`` and ``device_read_many()`` when
+      ``read()`` fails.
 
     - Several stability and style changes (thank you debian code reviewers).
 
@@ -45,7 +67,7 @@ Fixes:
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixes:
-    - Fix vendor id and product id order in ``DeviceInfo`` (thanks kived).
+    - Fix vendor id and product id order in ``DeviceInfo`` (thanks @kived).
 
 0.3.1 (Nov 23, 2012)
 ^^^^^^^^^^^^^^^^^^^^
