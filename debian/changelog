@@ -1,3 +1,9 @@
+python-evdev (0.4.1-0ubuntu2) trusty; urgency=medium
+
+  * Rebuild for python3.4 as a supported python version.
+
+ -- Matthias Klose <doko@ubuntu.com>  Sat, 04 Jan 2014 18:32:25 +0000
+
 python-evdev (0.4.1-0ubuntu1) saucy; urgency=low
 
   * New upstream version. (LP: #1206139)
