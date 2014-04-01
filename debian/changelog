@@ -1,3 +1,9 @@
+python-evdev (0.4.1-0ubuntu3) trusty; urgency=medium
+
+  * No change rebuild to drop python3.3 compiled extension.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Tue, 01 Apr 2014 00:00:24 +0100
+
 python-evdev (0.4.1-0ubuntu2) trusty; urgency=medium
 
   * Rebuild for python3.4 as a supported python version.
