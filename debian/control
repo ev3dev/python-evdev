@@ -7,7 +7,8 @@ Build-Depends: debhelper (>= 9),
                python-setuptools,
                python3-all-dev,
                python3-setuptools,
-Standards-Version: 3.9.4
+               dh-python
+Standards-Version: 3.9.6
 X-Python-Version: >= 2.7
 X-Python3-Version: >= 3.2
 Homepage: https://pypi.python.org/pypi/evdev/
@@ -18,7 +19,7 @@ Architecture: linux-any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
          ${python:Depends},
-Description: python bindings for the generic input event interface
+Description: Python bindings for the generic input event interface
  The evdev interface serves the purpose of passing events generated in the
  kernel directly to userspace through character devices that are typically
  located in /dev/input/.
@@ -34,7 +35,7 @@ Architecture: linux-any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
          ${python3:Depends},
-Description: python 3 bindings for the generic input event interface
+Description: Python 3 bindings for the generic input event interface
  The evdev interface serves the purpose of passing events generated in the
  kernel directly to userspace through character devices that are typically
  located in /dev/input/.

@@ -6,66 +6,65 @@ import sys
 import textwrap
 
 from os.path import abspath, dirname, join as pjoin
-from distutils.command.build import build
-from setuptools.command.develop import develop
-from setuptools.command.bdist_egg import bdist_egg
-from setuptools import setup, Extension, Command
+from distutils.command import build
 
+#-----------------------------------------------------------------------------
+try:
+    from setuptools import setup, Extension
+    from setuptools.command import bdist_egg, develop
+except ImportError:
+    from distutils.core import setup, Extension
+    from distutils.command import build
+    develop, bdist_egg = None, None
 
+#-----------------------------------------------------------------------------
 here = abspath(dirname(__file__))
 
-requires = ()
-test_requires = ('pytest',)
-
-classifiers = (
-    'Development Status :: 4 - Beta',
-    # 'Development Status :: 5 - Production/Stable',
+#-----------------------------------------------------------------------------
+classifiers = [
+    'Development Status :: 5 - Production/Stable',
     'Programming Language :: Python :: 2.7',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.2',
     'Programming Language :: Python :: 3.3',
+    'Programming Language :: Python :: 3.4',
     'Operating System :: POSIX :: Linux',
     'Intended Audience :: Developers',
     'Topic :: Software Development :: Libraries',
     'License :: OSI Approved :: BSD License',
     'Programming Language :: Python :: Implementation :: CPython',
-)
+]
 
-input_c  = Extension('evdev._input',  sources=['evdev/input.c'],  )  # extra_compile_args=['-O0'])
-uinput_c = Extension('evdev._uinput', sources=['evdev/uinput.c'], )  # extra_compile_args=['-O0'])
-ecodes_c = Extension('evdev._ecodes', sources=['evdev/ecodes.c'], )  # extra_compile_args=['-O0'])
+#-----------------------------------------------------------------------------
+cflags   = ['-std=c99', '-Wno-error=declaration-after-statement']
+input_c  = Extension('evdev._input',  sources=['evdev/input.c'],  extra_compile_args=cflags)
+uinput_c = Extension('evdev._uinput', sources=['evdev/uinput.c'], extra_compile_args=cflags)
+ecodes_c = Extension('evdev._ecodes', sources=['evdev/ecodes.c'], extra_compile_args=cflags)
 
+#-----------------------------------------------------------------------------
 kw = {
-    'name'                 : 'evdev',
-    'version'              : '0.4.1',
+    'name':                 'evdev',
+    'version':              '0.4.7',
 
-    'description'          : 'bindings for the linux input handling subsystem',
-    'long_description'     : open(pjoin(here, 'README.rst')).read(),
+    'description':          'Bindings to the Linux input handling subsystem',
+    'long_description':     open(pjoin(here, 'README.rst')).read(),
 
-    'author'               : 'Georgi Valkov',
-    'author_email'         : 'georgi.t.valkov@gmail.com',
+    'author':               'Georgi Valkov',
+    'author_email':         'georgi.t.valkov@gmail.com',
+    'license':              'Revised BSD License',
+    'keywords':             'evdev input uinput',
+    'url':                  'https://github.com/gvalkov/python-evdev',
+    'classifiers':          classifiers,
 
-    'license'              : 'New BSD License',
-
-    'keywords'             : 'evdev input uinput',
-    'classifiers'          : classifiers,
-
-    'url'                  : 'https://github.com/gvalkov/python-evdev',
-
-    'packages'             : ['evdev'],
-
-    'ext_modules'          : [input_c, uinput_c, ecodes_c],
-    'install_requires'     : requires,
-    'tests_require'        : test_requires,
-
-    'include_package_data' : False,
-    'zip_safe'             : True,
-    'cmdclass'             : {},
+    'packages':             ['evdev'],
+    'ext_modules':          [input_c, uinput_c, ecodes_c],
+    'include_package_data': False,
+    'zip_safe':             True,
+    'cmdclass':             {},
 }
 
 
+#-----------------------------------------------------------------------------
 def create_ecodes():
-    # :todo: expose as a command option
     header = '/usr/include/linux/input.h'
 
     if not os.path.isfile(header):
@@ -74,7 +73,7 @@ def create_ecodes():
         install the headers for your kernel in order to continue:
 
             yum install kernel-headers-$(uname -r)
-            apt-get intall linux-headers-$(uname -r)
+            apt-get install linux-headers-$(uname -r)
             pacman -S kernel-headers\n\n'''
 
         sys.stderr.write(textwrap.dedent(msg))
@@ -82,50 +81,25 @@ def create_ecodes():
 
     from subprocess import check_call
 
-    print('writing ecodes.c (using {})'.format(header))
-    check_call('bash ./ecodes.sh {} > ecodes.c'.format(header),
-               cwd='{}/evdev'.format(here),
-               shell=True)
+    print('writing ecodes.c (using %s)' % header)
+    cmd = '%s genecodes.py %s > ecodes.c' % (sys.executable, header)
+    check_call(cmd, cwd="%s/evdev" % here, shell=True)
 
 
-# :todo: figure out a smarter way to do this
-# :note: subclassing build_ext doesn't really cut it
-class BuildCommand(build):
-    def run(self):
-        create_ecodes()
-        build.run(self)
+def cmdfactory(cmd):
+    class cls(cmd):
+        def run(self):
+            create_ecodes()
+            cmd.run(self)
+    return cls
 
-class DevelopCommand(develop):
-    def run(self):
-        create_ecodes()
-        develop.run(self)
+#-----------------------------------------------------------------------------
+kw['cmdclass']['build'] = cmdfactory(build.build)
 
-class BdistEggCommand(bdist_egg):
-    def run(self):
-        create_ecodes()
-        bdist_egg.run(self)
+if develop and bdist_egg:
+    kw['cmdclass']['develop']   = cmdfactory(develop.develop)
+    kw['cmdclass']['bdist_egg'] = cmdfactory(bdist_egg.bdist_egg)
 
-
-class PyTest(Command):
-    ''' setup.py test -> py.test tests '''
-
-    user_options = []
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        from subprocess import call
-        errno = call(('py.test', 'tests'))
-        raise SystemExit(errno)
-
-
-kw['cmdclass']['test'] = PyTest
-kw['cmdclass']['build'] = BuildCommand
-kw['cmdclass']['develop'] = DevelopCommand
-kw['cmdclass']['bdist_egg'] = BdistEggCommand
-
+#-----------------------------------------------------------------------------
 if __name__ == '__main__':
     setup(**kw)

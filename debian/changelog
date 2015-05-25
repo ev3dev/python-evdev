@@ -1,3 +1,15 @@
+python-evdev (0.4.7-0ubuntu1) wily; urgency=medium
+
+  * New upstream release.
+  * debian/copyright: Update short name for BSD license.
+  * debian/control:
+    - Build-depend on dh-python.
+    - Fix capitalization of "python" in description synposes.
+    - Bump Standards-Version to 3.9.6.
+  * debian/rules: Simplify by using pybuild.
+
+ -- Logan Rosen <logan@ubuntu.com>  Mon, 25 May 2015 02:17:51 -0400
+
 python-evdev (0.4.1-0ubuntu3) trusty; urgency=medium
 
   * No change rebuild to drop python3.3 compiled extension.

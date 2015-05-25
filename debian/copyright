@@ -4,7 +4,7 @@ Source: https://pypi.python.org/pypi/evdev/
 
 Files: *
 Copyright: Copyright (c) 2012 Georgi Valkov. All rights reserved.
-License: BSD
+License: BSD-3-clause
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are
  met:

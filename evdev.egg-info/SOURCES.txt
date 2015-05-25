@@ -3,11 +3,15 @@ MANIFEST.in
 README.rst
 setup.py
 evdev/__init__.py
+evdev/_ecodes.py
+evdev/_input.py
+evdev/_uinput.py
 evdev/device.py
 evdev/ecodes.c
 evdev/ecodes.py
-evdev/ecodes.sh
 evdev/events.py
+evdev/ff.py
+evdev/genecodes.py
 evdev/input.c
 evdev/uinput.c
 evdev/uinput.py

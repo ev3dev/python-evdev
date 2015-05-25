@@ -18,7 +18,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#ifdef __FreeBSD__
+#include <dev/evdev/input.h>
+#else
 #include <linux/input.h>
+#endif
 
 #define MAX_NAME_SIZE 256
 
@@ -31,17 +35,6 @@ extern char*  BUS_NAME[];
 int test_bit(const char* bitmask, int bit) {
     return bitmask[bit/8] & (1 << (bit % 8));
 }
-
-
-// Useful for comparing input events as seen in the extension module
-// and as seen in python
-// static void
-// print_event(struct input_event *ev) {
-//     fprintf(stderr, "[so] event: time %ld.%06ld, code %02d, type %02d, val %02d\n",
-//             ev->time.tv_sec, ev->time.tv_usec,
-//             ev->code, ev->type, ev->value
-//     );
-// }
 
 
 // Read input event from a device and return a tuple that mimics input_event
@@ -58,6 +51,11 @@ device_read(PyObject *self, PyObject *args)
     int n = read(fd, &event, sizeof(event));
 
     if (n < 0) {
+        if (errno == EAGAIN) {
+            Py_INCREF(Py_None);
+            return Py_None;
+        }
+
         PyErr_SetFromErrno(PyExc_IOError);
         return NULL;
     }
@@ -145,7 +143,7 @@ static PyObject *
 ioctl_capabilities(PyObject *self, PyObject *args)
 {
     int fd, ev_type, ev_code;
-    char ev_bits[EV_MAX/8], code_bits[KEY_MAX/8];
+    char ev_bits[EV_MAX/8 + 1], code_bits[KEY_MAX/8 + 1];
     struct input_absinfo absinfo;
 
     int ret = PyArg_ParseTuple(args, "i", &fd);
@@ -166,7 +164,7 @@ ioctl_capabilities(PyObject *self, PyObject *args)
 
     memset(&ev_bits, 0, sizeof(ev_bits));
 
-    if (ioctl(_fd, EVIOCGBIT(0, EV_MAX), ev_bits) < 0)
+    if (ioctl(_fd, EVIOCGBIT(0, sizeof(ev_bits)), ev_bits) < 0)
         goto on_err;
 
     // Build a dictionary of the device's capabilities
@@ -177,7 +175,7 @@ ioctl_capabilities(PyObject *self, PyObject *args)
             eventcodes = PyList_New(0);
 
             memset(&code_bits, 0, sizeof(code_bits));
-            ioctl(_fd, EVIOCGBIT(ev_type, KEY_MAX), code_bits);
+            ioctl(_fd, EVIOCGBIT(ev_type, sizeof(code_bits)), code_bits);
 
             for (ev_code = 0; ev_code < KEY_MAX; ev_code++) {
                 if (test_bit(code_bits, ev_code)) {
@@ -315,6 +313,33 @@ ioctl_EVIOCGRAB(PyObject *self, PyObject *args)
 }
 
 
+static PyObject *
+ioctl_EVIOCGKEY(PyObject *self, PyObject *args)
+{
+    int fd, ret, key;
+    char keys_bitmask[KEY_MAX/8 + 1];
+    PyObject* res = PyList_New(0);
+
+    ret = PyArg_ParseTuple(args, "i", &fd);
+    if (!ret) return NULL;
+
+    memset(&keys_bitmask, 0, sizeof(keys_bitmask));
+    ret = ioctl(fd, EVIOCGKEY(sizeof(keys_bitmask)), keys_bitmask);
+    if (ret < 0) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return NULL;
+    }
+
+    for (key = 0; key < KEY_MAX; key++) {
+        if (test_bit(keys_bitmask, key)) {
+            PyList_Append(res, Py_BuildValue("i", key));
+        }
+    }
+
+    return res;
+}
+
+
 // todo: this function needs a better name
 static PyObject *
 get_sw_led_snd(PyObject *self, PyObject *args)
@@ -354,6 +379,87 @@ get_sw_led_snd(PyObject *self, PyObject *args)
 }
 
 
+static PyObject *
+ioctl_EVIOCGEFFECTS(PyObject *self, PyObject *args)
+{
+    int fd, ret, res;
+    ret = PyArg_ParseTuple(args, "i", &fd);
+    if (!ret) return NULL;
+
+    ret = ioctl(fd, EVIOCGEFFECTS, &res);
+    return Py_BuildValue("i", res);
+}
+
+void print_ff_effect(struct ff_effect* effect) {
+    fprintf(stderr,
+            "ff_effect:\n"
+            "  type: %d     \n"
+            "  id:   %d     \n"
+            "  direction: %d\n"
+            "  trigger: (%d, %d)\n"
+            "  replay:  (%d, %d)\n",
+            effect->type, effect->id, effect->direction,
+            effect->trigger.button, effect->trigger.interval,
+            effect->replay.length, effect->replay.delay
+        );
+
+
+    switch (effect->type) {
+    case FF_CONSTANT:
+        fprintf(stderr, "  constant: (%d, (%d, %d, %d, %d))\n", effect->u.constant.level,
+                effect->u.constant.envelope.attack_length,
+                effect->u.constant.envelope.attack_level,
+                effect->u.constant.envelope.fade_length,
+                effect->u.constant.envelope.fade_level);
+        break;
+    }
+}
+
+
+static PyObject *
+upload_effect(PyObject *self, PyObject *args)
+{
+    int fd, ret;
+    PyObject* effect_data;
+    ret = PyArg_ParseTuple(args, "iO", &fd, &effect_data);
+    if (!ret) return NULL;
+
+    void* data = PyBytes_AsString(effect_data);
+    struct ff_effect effect = {};
+    memmove(&effect, data, sizeof(struct ff_effect));
+
+    // print_ff_effect(&effect);
+
+    ret = ioctl(fd, EVIOCSFF, &effect);
+    if (ret != 0) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return NULL;
+    }
+
+    return Py_BuildValue("i", effect.id);
+}
+
+
+static PyObject *
+erase_effect(PyObject *self, PyObject *args)
+{
+    int fd, ret;
+    PyObject* ff_id_obj;
+    ret = PyArg_ParseTuple(args, "iO", &fd, &ff_id_obj);
+    if (!ret) return NULL;
+
+    long ff_id = PyLong_AsLong(ff_id_obj);
+    ret = ioctl(fd, EVIOCRMFF, ff_id);
+    if (ret != 0) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return NULL;
+    }
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+
 static PyMethodDef MethodTable[] = {
     { "unpack",               event_unpack,         METH_VARARGS, "unpack a single input event" },
     { "ioctl_devinfo",        ioctl_devinfo,        METH_VARARGS, "fetch input device info" },
@@ -362,9 +468,13 @@ static PyMethodDef MethodTable[] = {
     { "ioctl_EVIOCSREP",      ioctl_EVIOCSREP,      METH_VARARGS},
     { "ioctl_EVIOCGVERSION",  ioctl_EVIOCGVERSION,  METH_VARARGS},
     { "ioctl_EVIOCGRAB",      ioctl_EVIOCGRAB,      METH_VARARGS},
+    { "ioctl_EVIOCGKEY",      ioctl_EVIOCGKEY,      METH_VARARGS, "get global key state" },
+    { "ioctl_EVIOCGEFFECTS",  ioctl_EVIOCGEFFECTS,  METH_VARARGS, "fetch the number of effects the device can keep in its memory." },
     { "get_sw_led_snd",       get_sw_led_snd,       METH_VARARGS},
     { "device_read",          device_read,          METH_VARARGS, "read an input event from a device" },
     { "device_read_many",     device_read_many,     METH_VARARGS, "read all available input events from a device" },
+    { "upload_effect",        upload_effect,        METH_VARARGS, "" },
+    { "erase_effect",         erase_effect,         METH_VARARGS, "" },
 
     { NULL, NULL, 0, NULL}
 };
