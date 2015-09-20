@@ -1,3 +1,9 @@
+python-evdev (0.4.7-0ubuntu2ev3dev1) stable; urgency=medium
+
+  * ev3dev takeover to build for Debian jessie.
+
+ -- David Lechner <david@lechnology.com>  Sat, 19 Sep 2015 22:10:42 -0500
+
 python-evdev (0.4.7-0ubuntu2) wily; urgency=medium
 
   * No-change rebuild for python3.5 transition

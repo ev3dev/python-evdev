@@ -1,7 +1,8 @@
 Source: python-evdev
 Section: python
 Priority: optional
-Maintainer: Łukasz 'sil2100' Zemczak <lukasz.zemczak@ubuntu.com>
+Maintainer: David Lechner <david@lechnology.com>
+XSBC-Original-Maintainer: Łukasz 'sil2100' Zemczak <lukasz.zemczak@ubuntu.com>
 Build-Depends: debhelper (>= 9),
                python-all-dev,
                python-setuptools,
@@ -12,7 +13,8 @@ Standards-Version: 3.9.6
 X-Python-Version: >= 2.7
 X-Python3-Version: >= 3.2
 Homepage: https://pypi.python.org/pypi/evdev/
-Vcs-Bzr: lp:~sil2100/python-evdev/ubuntu
+Vcs-Browser: https://github.com/ev3dev/python-evdev
+Vcs-Git: git://github.com/ev3dev/python-evdev
 
 Package: python-evdev
 Architecture: linux-any
