@@ -1,3 +1,16 @@
+python-evdev (0.4.7-0ubuntu4) xenial; urgency=medium
+
+  * debian/patches/input-event-codes.diff: Cherrypick patch from upstream Git
+    to fix import failure with Linux 4.4.0 kernel headers.
+
+ -- Logan Rosen <logan@ubuntu.com>  Sun, 20 Mar 2016 23:17:20 -0500
+
+python-evdev (0.4.7-0ubuntu3) xenial; urgency=medium
+
+  * No-change rebuild to drop python3.4 support.
+
+ -- Matthias Klose <doko@ubuntu.com>  Mon, 18 Jan 2016 20:43:01 +0000
+
 python-evdev (0.4.7-0ubuntu2ev3dev1) stable; urgency=medium
 
   * ev3dev takeover to build for Debian jessie.
