@@ -1,3 +1,5 @@
+This fork was intended to port evdev to run in Micropython.
+
 *evdev*
 -------
 
